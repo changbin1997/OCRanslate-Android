@@ -1,0 +1,10 @@
+{
+  "appId": "com.ocr.changbin.app",
+  "appName": "OCRanslate",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
