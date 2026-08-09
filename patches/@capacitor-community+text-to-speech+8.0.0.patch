@@ -1,0 +1,448 @@
+diff --git a/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/SpeakResultCallback.java b/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/SpeakResultCallback.java
+index 77f8ba4..92ec7b1 100644
+--- a/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/SpeakResultCallback.java
++++ b/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/SpeakResultCallback.java
+@@ -3,5 +3,6 @@ package com.getcapacitor.community.tts;
+ public interface SpeakResultCallback {
+     void onDone();
+     void onError();
++    void onUnsupportedLanguage();
+     void onRangeStart(int start, int end);
+ }
+diff --git a/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeech.java b/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeech.java
+index 3ad7683..8f59301 100644
+--- a/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeech.java
++++ b/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeech.java
+@@ -4,16 +4,18 @@ import android.content.Context;
+ import android.content.Intent;
+ import android.content.pm.PackageManager;
+ import android.content.pm.ResolveInfo;
+-import android.os.Build;
+ import android.os.Bundle;
+ import android.speech.tts.UtteranceProgressListener;
+ import android.speech.tts.Voice;
+ import android.util.Log;
+ import com.getcapacitor.JSArray;
+ import com.getcapacitor.JSObject;
++import java.lang.reflect.Field;
+ import java.util.ArrayList;
+ import java.util.Collections;
+ import java.util.HashMap;
++import java.util.HashSet;
++import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
+ import java.util.Set;
+@@ -22,14 +24,28 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+ 
+     public static final String LOG_TAG = "TextToSpeech";
+ 
++    /**
++     * Maximum number of consecutive engine re-initialization attempts. After
++     * this many attempts queued requests are failed instead of being retried
++     * forever.
++     */
++    private static final int MAX_REINIT_ATTEMPTS = 3;
++
+     private Context context;
+     private android.speech.tts.TextToSpeech tts = null;
+     private int initializationStatus;
+-    private JSObject[] supportedVoices = null;
+-    private Map<String, SpeakResultCallback> requests = new HashMap();
++    private Map<String, SpeakResultCallback> requests = new HashMap<>();
++    private final List<SpeakRequest> pendingRequests = new ArrayList<>();
++    private boolean reinitializing = false;
++    private int reinitAttempts = 0;
++    private Set<String> knownSupportedLanguageTags = new HashSet<>();
+ 
+     TextToSpeech(Context context) {
+         this.context = context;
++        createTts();
++    }
++
++    private void createTts() {
+         try {
+             tts = new android.speech.tts.TextToSpeech(context, this);
+             tts.setOnUtteranceProgressListener(
+@@ -66,12 +82,22 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+             );
+         } catch (Exception ex) {
+             Log.d(LOG_TAG, ex.getLocalizedMessage());
++            reinitializing = false;
++            failPendingRequests();
+         }
+     }
+ 
+     @Override
+     public void onInit(int status) {
+         this.initializationStatus = status;
++        this.reinitializing = false;
++        if (status == android.speech.tts.TextToSpeech.SUCCESS) {
++            refreshKnownSupportedLanguages();
++            flushPendingRequests();
++        } else {
++            Log.w(LOG_TAG, "TTS engine initialization failed with status: " + status);
++            failPendingRequests();
++        }
+     }
+ 
+     public void speak(
+@@ -98,13 +124,36 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+         SpeakResultCallback resultCallback,
+         int queueStrategy
+     ) {
++        if (!isTtsEngineUsable()) {
++            // The TTS engine process was killed (e.g. by the system while the
++            // camera or other apps were running). Re-create the connection and
++            // queue the request; it will be spoken once initialization succeeds.
++            reinitializeAndQueue(new SpeakRequest(text, lang, rate, pitch, volume, voice, callbackId, resultCallback, queueStrategy));
++            return;
++        }
++
++        Locale locale = Locale.forLanguageTag(lang);
++        int langAvailability = tts.isLanguageAvailable(locale);
++        if (!isLanguageAvailable(langAvailability)) {
++            // A language that was supported a moment ago cannot suddenly become
++            // unsupported. This usually means the engine just restarted and its
++            // language data is not ready yet, so recover instead of reporting a
++            // misleading "This language is not supported" error.
++            if (wasLanguageSupported(lang) || !isEngineHealthy()) {
++                Log.w(LOG_TAG, "Language '" + lang + "' is temporarily unavailable, re-initializing the TTS engine.");
++                reinitializeAndQueue(new SpeakRequest(text, lang, rate, pitch, volume, voice, callbackId, resultCallback, queueStrategy));
++                return;
++            }
++            resultCallback.onUnsupportedLanguage();
++            return;
++        }
++        knownSupportedLanguageTags.add(lang);
++
+         if (queueStrategy != android.speech.tts.TextToSpeech.QUEUE_ADD) {
+             stop();
+         }
+         requests.put(callbackId, resultCallback);
+ 
+-        Locale locale = Locale.forLanguageTag(lang);
+-
+         Bundle ttsParams = new Bundle();
+         ttsParams.putSerializable(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, callbackId);
+         ttsParams.putSerializable(android.speech.tts.TextToSpeech.Engine.KEY_PARAM_VOLUME, volume);
+@@ -117,18 +166,47 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+             ArrayList<Voice> supportedVoices = getSupportedVoicesOrdered();
+             if (voice < supportedVoices.size()) {
+                 Voice newVoice = supportedVoices.get(voice);
+-                int resultCode = tts.setVoice(newVoice);
++                tts.setVoice(newVoice);
+             }
+         }
+-        tts.speak(text, queueStrategy, ttsParams, callbackId);
++
++        try {
++            int result = tts.speak(text, queueStrategy, ttsParams, callbackId);
++            if (result == android.speech.tts.TextToSpeech.ERROR) {
++                requests.remove(callbackId);
++                if (!isTtsEngineUsable()) {
++                    reinitializeAndQueue(new SpeakRequest(text, lang, rate, pitch, volume, voice, callbackId, resultCallback, queueStrategy));
++                    return;
++                }
++                resultCallback.onError();
++            } else {
++                reinitAttempts = 0;
++            }
++        } catch (Exception ex) {
++            Log.d(LOG_TAG, ex.getLocalizedMessage());
++            requests.remove(callbackId);
++            if (!isTtsEngineUsable()) {
++                reinitializeAndQueue(new SpeakRequest(text, lang, rate, pitch, volume, voice, callbackId, resultCallback, queueStrategy));
++                return;
++            }
++            resultCallback.onError();
++        }
+     }
+ 
+     public void stop() {
+-        tts.stop();
++        if (tts != null) {
++            tts.stop();
++        }
+         requests.clear();
++        failPendingRequests();
+     }
+ 
+     public JSArray getSupportedLanguages() {
++        if (isEngineDead()) {
++            Log.w(LOG_TAG, "TTS engine is not connected; re-initializing.");
++            reinitialize();
++            return new JSArray();
++        }
+         ArrayList<String> languages = new ArrayList<>();
+         Set<Locale> supportedLocales = tts.getAvailableLanguages();
+         for (Locale supportedLocale : supportedLocales) {
+@@ -156,6 +234,11 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+     }
+ 
+     public JSArray getSupportedVoices() {
++        if (isEngineDead()) {
++            Log.w(LOG_TAG, "TTS engine is not connected; re-initializing.");
++            reinitialize();
++            return new JSArray();
++        }
+         ArrayList<JSObject> voices = new ArrayList<>();
+         ArrayList<Voice> supportedVoices = getSupportedVoicesOrdered();
+         for (Voice supportedVoice : supportedVoices) {
+@@ -180,16 +263,29 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+     }
+ 
+     public boolean isAvailable() {
+-        if (tts != null && initializationStatus == android.speech.tts.TextToSpeech.SUCCESS) {
++        if (tts != null && (reinitializing || initializationStatus == android.speech.tts.TextToSpeech.SUCCESS)) {
+             return true;
+         }
+         return false;
+     }
+ 
+     public boolean isLanguageSupported(String lang) {
++        boolean wasInitialized = initializationStatus == android.speech.tts.TextToSpeech.SUCCESS;
++        if (!isTtsEngineUsable()) {
++            if (wasInitialized) {
++                // The engine died after a successful init: kick off recovery so
++                // the next call works, and answer from the cached language list.
++                reinitialize();
++            }
++            return wasLanguageSupported(lang);
++        }
+         Locale locale = Locale.forLanguageTag(lang);
+         int result = tts.isLanguageAvailable(locale);
+-        return result == tts.LANG_AVAILABLE || result == tts.LANG_COUNTRY_AVAILABLE || result == tts.LANG_COUNTRY_VAR_AVAILABLE;
++        boolean supported = isLanguageAvailable(result);
++        if (supported) {
++            knownSupportedLanguageTags.add(lang);
++        }
++        return supported;
+     }
+ 
+     public void onDestroy() {
+@@ -200,6 +296,155 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+         tts.shutdown();
+     }
+ 
++    private boolean isTtsEngineUsable() {
++        if (tts == null || reinitializing) {
++            return false;
++        }
++        if (initializationStatus != android.speech.tts.TextToSpeech.SUCCESS) {
++            return false;
++        }
++        return isServiceConnectionAlive();
++    }
++
++    private boolean isEngineDead() {
++        if (tts == null || reinitializing) {
++            return false;
++        }
++        if (initializationStatus != android.speech.tts.TextToSpeech.SUCCESS) {
++            return false;
++        }
++        return !isServiceConnectionAlive();
++    }
++
++    /**
++     * Checks whether the framework still holds a connection to the TTS engine.
++     * When the engine process is killed by the system (low memory, camera use,
++     * many background apps), the framework clears its internal connection and
++     * does not reconnect by itself.
++     */
++    private boolean isServiceConnectionAlive() {
++        try {
++            Field field = android.speech.tts.TextToSpeech.class.getDeclaredField("mServiceConnection");
++            field.setAccessible(true);
++            Object connection = field.get(tts);
++            return connection != null;
++        } catch (Throwable ignored) {
++            // Reflection is not available on this platform (or the internal
++            // field name changed). Fall back to the language-availability
++            // checks to detect a dead engine.
++            return true;
++        }
++    }
++
++    private boolean isEngineHealthy() {
++        int checked = 0;
++        for (String tag : knownSupportedLanguageTags) {
++            if (checked >= 2) {
++                break;
++            }
++            checked++;
++            try {
++                if (isLanguageAvailable(tts.isLanguageAvailable(Locale.forLanguageTag(tag)))) {
++                    return true;
++                }
++            } catch (Exception ignored) {
++                // keep checking the remaining entries
++            }
++        }
++        // No baseline to compare against: assume the engine is healthy.
++        return knownSupportedLanguageTags.isEmpty();
++    }
++
++    private boolean wasLanguageSupported(String lang) {
++        return knownSupportedLanguageTags.contains(lang);
++    }
++
++    private void refreshKnownSupportedLanguages() {
++        try {
++            Set<Locale> locales = tts.getAvailableLanguages();
++            if (locales != null && !locales.isEmpty()) {
++                Set<String> tags = new HashSet<>();
++                for (Locale locale : locales) {
++                    tags.add(locale.toLanguageTag());
++                }
++                knownSupportedLanguageTags = tags;
++            }
++        } catch (Exception ex) {
++            Log.d(LOG_TAG, ex.getLocalizedMessage());
++        }
++    }
++
++    private void reinitializeAndQueue(SpeakRequest request) {
++        pendingRequests.add(request);
++        reinitialize();
++    }
++
++    private void reinitialize() {
++        if (reinitializing) {
++            return;
++        }
++        if (reinitAttempts >= MAX_REINIT_ATTEMPTS) {
++            Log.w(LOG_TAG, "Giving up on re-initializing the TTS engine after " + reinitAttempts + " attempts.");
++            reinitAttempts = 0;
++            failPendingRequests();
++            return;
++        }
++        reinitializing = true;
++        reinitAttempts++;
++        Log.w(LOG_TAG, "TTS engine connection lost; creating a new TextToSpeech instance (attempt " + reinitAttempts + ").");
++        if (tts != null) {
++            try {
++                tts.stop();
++            } catch (Exception ignored) {
++                // ignore
++            }
++            try {
++                tts.shutdown();
++            } catch (Exception ignored) {
++                // ignore
++            }
++        }
++        initializationStatus = -1;
++        createTts();
++    }
++
++    private void flushPendingRequests() {
++        List<SpeakRequest> queued = new ArrayList<>(pendingRequests);
++        pendingRequests.clear();
++        for (SpeakRequest request : queued) {
++            speak(
++                request.text,
++                request.lang,
++                request.rate,
++                request.pitch,
++                request.volume,
++                request.voice,
++                request.callbackId,
++                request.resultCallback,
++                request.queueStrategy
++            );
++        }
++    }
++
++    private void failPendingRequests() {
++        if (pendingRequests.isEmpty()) {
++            return;
++        }
++        List<SpeakRequest> queued = new ArrayList<>(pendingRequests);
++        pendingRequests.clear();
++        for (SpeakRequest request : queued) {
++            if (request.resultCallback != null) {
++                request.resultCallback.onError();
++            }
++        }
++    }
++
++    private static boolean isLanguageAvailable(int result) {
++        return result == android.speech.tts.TextToSpeech.LANG_AVAILABLE
++            || result == android.speech.tts.TextToSpeech.LANG_COUNTRY_AVAILABLE
++            || result == android.speech.tts.TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE;
++    }
++
+     private JSObject convertVoiceToJSObject(Voice voice) {
+         Locale locale = voice.getLocale();
+         JSObject obj = new JSObject();
+@@ -210,4 +455,39 @@ public class TextToSpeech implements android.speech.tts.TextToSpeech.OnInitListe
+         obj.put("default", false);
+         return obj;
+     }
++
++    private static class SpeakRequest {
++
++        private final String text;
++        private final String lang;
++        private final float rate;
++        private final float pitch;
++        private final float volume;
++        private final int voice;
++        private final String callbackId;
++        private final SpeakResultCallback resultCallback;
++        private final int queueStrategy;
++
++        SpeakRequest(
++            String text,
++            String lang,
++            float rate,
++            float pitch,
++            float volume,
++            int voice,
++            String callbackId,
++            SpeakResultCallback resultCallback,
++            int queueStrategy
++        ) {
++            this.text = text;
++            this.lang = lang;
++            this.rate = rate;
++            this.pitch = pitch;
++            this.volume = volume;
++            this.voice = voice;
++            this.callbackId = callbackId;
++            this.resultCallback = resultCallback;
++            this.queueStrategy = queueStrategy;
++        }
++    }
+ }
+diff --git a/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeechPlugin.java b/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeechPlugin.java
+index 62eaf01..ad22c87 100644
+--- a/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeechPlugin.java
++++ b/node_modules/@capacitor-community/text-to-speech/android/src/main/java/com/getcapacitor/community/tts/TextToSpeechPlugin.java
+@@ -40,12 +40,6 @@ public class TextToSpeechPlugin extends Plugin {
+         int voice = call.getInt("voice", -1);
+         int queueStrategy = call.getInt("queueStrategy", 0);
+ 
+-        boolean isLanguageSupported = implementation.isLanguageSupported(lang);
+-        if (!isLanguageSupported) {
+-            call.reject(ERROR_UNSUPPORTED_LANGUAGE);
+-            return;
+-        }
+-
+         SpeakResultCallback resultCallback = new SpeakResultCallback() {
+             @Override
+             public void onDone() {
+@@ -57,6 +51,11 @@ public class TextToSpeechPlugin extends Plugin {
+                 call.reject(ERROR_UTTERANCE);
+             }
+ 
++            @Override
++            public void onUnsupportedLanguage() {
++                call.reject(ERROR_UNSUPPORTED_LANGUAGE);
++            }
++
+             @Override
+             public void onRangeStart(int start, int end) {
+                 JSObject ret = new JSObject();

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@capacitor-community/camera-preview": "^8.0.1",
@@ -35,6 +36,7 @@
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
     "@vitejs/plugin-vue": "^6.0.6",
+    "patch-package": "^8.0.1",
     "vite": "^8.0.8",
     "vite-plugin-vue-devtools": "^8.1.1"
   },
