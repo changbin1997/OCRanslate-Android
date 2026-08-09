@@ -11,6 +11,7 @@ import aboutPage from './components/about-page.vue';
 import exportAndImportDataPage from './components/export-and-import-data-page.vue';
 import ocrHistoryPage from './components/ocr-history-page.vue';
 import translationHistoryPage from './components/translation-history-page.vue';
+import ttsHistoryPage from './components/tts-history-page.vue';
 
 import {Button as TButton,
   TabBar,
@@ -43,7 +44,8 @@ const router = createRouter({
     {path: '/about', component: aboutPage, name: 'aboutPage'},
     {path: '/export-and-import-data', component: exportAndImportDataPage, name: 'exportAndImportDataPage'},
     {path: '/ocr-history', component: ocrHistoryPage, name: 'ocrHistoryPage'},
-    {path: '/translation-history', component: translationHistoryPage, name: 'translationHistoryPage'}
+    {path: '/translation-history', component: translationHistoryPage, name: 'translationHistoryPage'},
+    {path: '/tts-history', component: ttsHistoryPage, name: 'ttsHistoryPage'}
   ],
   history: createWebHashHistory()
 });

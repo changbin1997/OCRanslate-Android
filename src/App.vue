@@ -46,7 +46,8 @@ const titleList = {
   aboutPage: '关于',
   exportAndImportDataPage: '导出和导入记录',
   ocrHistoryPage: 'OCR 历史记录',
-  translationHistoryPage: '翻译历史记录'
+  translationHistoryPage: '翻译历史记录',
+  ttsHistoryPage: '在线 TTS 语音历史记录'
 };
 
 const showPage = ref(false);  // 显示页面组件

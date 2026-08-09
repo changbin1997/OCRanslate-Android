@@ -4,6 +4,7 @@
       <t-cell-group bordered>
         <t-cell title="OCR 使用记录" @click="toPage('ocrHistoryPage')" hover />
         <t-cell title="翻译使用记录" @click="toPage('translationHistoryPage')" hover />
+        <t-cell title="在线 TTS 语音使用记录" @click="toPage('ttsHistoryPage')" hover />
         <t-cell title="导出和导入记录" @click="toPage('exportAndImportDataPage')" hover />
         <t-cell title="设置" @click="toPage('optionsPage')"  hover />
         <t-cell title="关于" @click="toPage('aboutPage')"  hover />

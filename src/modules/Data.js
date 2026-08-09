@@ -169,6 +169,40 @@ class Data {
   }
 
   /**
+   * 获取 TTS 记录的总数量
+   * @returns {Promise<{result: string, msg: *}|{result: string, count: *}>}
+   */
+  async getTtsHistoryCount() {
+    const sql = 'SELECT COUNT(*) AS count FROM tts_history';
+    try {
+      const result = await this.db.query(sql);
+      return {result: 'success', count: result.values[0].count};
+    }catch (error) {
+      return {result: 'error', msg: error.message};
+    }
+  }
+
+  /**
+   * 获取 TTS 记录
+   * @param {number} start 起始位置
+   * @param {number} count 数量
+   * @returns {Promise<{result: string, msg: *}|{result: string, data: *}>}
+   */
+  async getTtsHistory(start = 0, count = 20) {
+    const sql = `
+    SELECT api_name, provider, created, word_count FROM tts_history
+    ORDER BY created DESC LIMIT ?, ?
+    `;
+    const values = [start, count];
+    try {
+      const result = await this.db.query(sql, values);
+      return {result: 'success', data: result.values};
+    }catch (error) {
+      return {result: 'error', msg: error.message};
+    }
+  }
+
+  /**
    * 按 api_name、provider 分组统计使用量（公共查询逻辑）
    * @param {string} table 表名
    * @param {string} aggregate 聚合表达式，如 COUNT(*)
