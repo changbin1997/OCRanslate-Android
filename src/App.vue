@@ -205,4 +205,27 @@ body {
 .transparent-background {
   background: transparent !important;
 }
+
+/*禁止文本选中*/
+* {
+  /* 禁用文本选中 */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* 禁用 iOS/Android WebKit 长按弹出默认呼出菜单 */
+  -webkit-touch-callout: none;
+  /* 移除移动端点击元素时的蓝色/灰色高亮遮罩（极具 Web 感） */
+  -webkit-tap-highlight-color: transparent;
+}
+/* 允许输入框、文本域以及标记为可选中的区域正常选中文本 */
+input,
+textarea,
+[contenteditable="true"],
+.selectable {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
 </style>

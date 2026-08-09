@@ -169,19 +169,25 @@ class Data {
   }
 
   /**
-   * 获取本月翻译字数统计
+   * 按 api_name、provider 分组统计使用量（公共查询逻辑）
+   * @param {string} table 表名
+   * @param {string} aggregate 聚合表达式，如 COUNT(*)
+   * @param {string} alias 统计列别名，如 count 或 word_count
+   * @param {number} [timestamp] 起始时间戳，传入时只统计该时间之后的数据
    * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
    */
-  async getThisMonthTranslationWordCount(timestamp) {
+  async getGroupedStats(table, aggregate, alias, timestamp) {
+    const whereClause = timestamp !== undefined ? 'WHERE created >= ?' : '';
+    const values = timestamp !== undefined ? [timestamp] : [];
     const sql = `
-    SELECT api_name, provider, SUM(word_count) AS word_count
-    FROM translation_history 
-    WHERE created >= ?
+    SELECT api_name, provider, ${aggregate} AS ${alias}
+    FROM ${table}
+    ${whereClause}
     GROUP BY api_name, provider
-    ORDER BY word_count DESC
+    ORDER BY ${alias} DESC
     `;
     try {
-      const result = await this.db.query(sql, [timestamp]);
+      const result = await this.db.query(sql, values);
       return {result: 'success', data: result.values};
     }catch (error) {
       return {result: 'error', msg: error.message};
@@ -193,39 +199,16 @@ class Data {
    * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
    */
   async getTranslationWordCount() {
-    const sql = `
-    SELECT api_name, provider, SUM(word_count) AS word_count
-    FROM translation_history 
-    GROUP BY api_name, provider
-    ORDER BY word_count DESC
-    `;
-    try {
-      const result = await this.db.query(sql);
-      return {result: 'success', data: result.values};
-    }catch (error) {
-      return {result: 'error', msg: error.message};
-    }
+    return this.getGroupedStats('translation_history', 'SUM(word_count)', 'word_count');
   }
 
   /**
-   * 获取本月 OCR API 的使用量
-   * @param {number} timestamp
+   * 获取本月翻译字数统计
+   * @param {number} timestamp 起始时间戳
    * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
    */
-  async getThisMonthOcrCount(timestamp) {
-    const sql = `
-    SELECT api_name, provider, COUNT(*) AS count 
-    FROM ocr_history 
-    WHERE created >= ?
-    GROUP BY api_name, provider
-    ORDER BY count DESC
-    `;
-    try {
-      const result = await this.db.query(sql, [timestamp]);
-      return {result: 'success', data: result.values};
-    }catch (error) {
-      return {result: 'error', msg: error.message};
-    }
+  async getThisMonthTranslationWordCount(timestamp) {
+    return this.getGroupedStats('translation_history', 'SUM(word_count)', 'word_count', timestamp);
   }
 
   /**
@@ -233,18 +216,33 @@ class Data {
    * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
    */
   async getOcrCount() {
-    const sql = `
-    SELECT api_name, provider, COUNT(*) AS count 
-    FROM ocr_history 
-    GROUP BY api_name, provider
-    ORDER BY count DESC
-    `;
-    try {
-      const result = await this.db.query(sql);
-      return {result: 'success', data: result.values};
-    }catch (error) {
-      return {result: 'error', msg: error.message};
-    }
+    return this.getGroupedStats('ocr_history', 'COUNT(*)', 'count');
+  }
+
+  /**
+   * 获取本月 OCR API 的使用量
+   * @param {number} timestamp 起始时间戳
+   * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
+   */
+  async getThisMonthOcrCount(timestamp) {
+    return this.getGroupedStats('ocr_history', 'COUNT(*)', 'count', timestamp);
+  }
+
+  /**
+   * 获取 TTS 字数统计
+   * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
+   */
+  async getTtsWordCount() {
+    return this.getGroupedStats('tts_history', 'SUM(word_count)', 'word_count');
+  }
+
+  /**
+   * 获取本月 TTS 字数统计
+   * @param {number} timestamp 起始时间戳
+   * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
+   */
+  async getThisMonthTtsWordCount(timestamp) {
+    return this.getGroupedStats('tts_history', 'SUM(word_count)', 'word_count', timestamp);
   }
 
   /**
@@ -282,6 +280,28 @@ class Data {
     (api_name, provider, created) VALUES (?, ?, ?)
     `;
     const values = [apiName, provider, created];
+    try {
+      const result = await this.db.run(sql, values);
+      return {result: 'success', count: result.changes.changes};
+    }catch (error) {
+      return {result: 'error', msg: error.message};
+    }
+  }
+
+  /**
+   * 添加 TTS 历史记录
+   * @param {string} api_name API 名称
+   * @param {string} provider 提供商
+   * @param {number} created 时间戳
+   * @param {number} word_count 字数
+   * @returns 返回受影响的行
+   */
+  async addTtsHistory(api_name, provider, created, word_count) {
+    const sql = `
+    INSERT INTO tts_history
+    (api_name, provider, created, word_count) VALUES (?, ?, ?, ?)
+    `;
+    const values = [api_name, provider, created, word_count];
     try {
       const result = await this.db.run(sql, values);
       return {result: 'success', count: result.changes.changes};
@@ -387,6 +407,13 @@ class Data {
         );
 
         CREATE TABLE IF NOT EXISTS translation_history (
+          api_name VARCHAR (50) NOT NULL,
+          provider VARCHAR (30) NOT NULL,
+          created INTEGER NOT NULL,
+          word_count INTEGER NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS tts_history (
           api_name VARCHAR (50) NOT NULL,
           provider VARCHAR (30) NOT NULL,
           created INTEGER NOT NULL,

@@ -1,5 +1,7 @@
 import MimoTTS from './MimoTTS.js';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
+import data from './Data.js';
+import DateTime from './DateTime.js';
 
 /**
  * 文本转语音 (TTS) 封装模块
@@ -51,6 +53,10 @@ export default class TTS {
   async speak(text, onStart, onStop, onError) {
     if (this.ttsEngine === 'MiMo-V2.5-TTS') {
       // 使用 MimoTTS 朗读
+      // 命中缓存时 MimoTTS 会直接播放上次合成的音频，不重复请求 API，因此也不重复记录
+      const isCachePlayback = this.mimoTTS.cache !== null && this.mimoTTS.cache.text === text;
+      let hasError = false;
+
       await this.mimoTTS.speak(
         text,
         this.volume,
@@ -62,9 +68,15 @@ export default class TTS {
           if (typeof onStop === 'function') onStop();
         },
         (errorMessage) => {
+          hasError = true;
           if (typeof onError === 'function') onError(errorMessage);
         }
       );
+
+      // 合成成功且不是播放缓存音频时，记录本次 TTS 调用
+      if (!isCachePlayback && !hasError) {
+        await data.addTtsHistory('MiMo-V2.5-TTS', 'xiaomi', DateTime.timestamp(), text.length);
+      }
     } else {
       // 使用离线语音
       try {

@@ -1,6 +1,6 @@
 <template>
   <div id="historical-overview-page">
-    <t-empty :icon="icon.InfoCircleFilledIcon" description="没有数据" v-if="ocrCount.length < 1 && thisMonthOcrCount.length < 1 && translationWordCount.length < 1 && thisMonthTranslationWordCount.length < 1" />
+    <t-empty :icon="icon.InfoCircleFilledIcon" description="没有数据" v-if="ocrCount.length < 1 && thisMonthOcrCount.length < 1 && translationWordCount.length < 1 && thisMonthTranslationWordCount.length < 1 && ttsWordCount.length < 1 && thisMonthTtsWordCount.length < 1" />
 
     <!--本月 OCR 使用量-->
     <div class="data-list" v-if="thisMonthOcrCount.length">
@@ -45,6 +45,28 @@
         </div>
       </div>
     </div>
+
+    <!--本月 TTS 字数统计-->
+    <div class="data-list" v-if="thisMonthTtsWordCount.length">
+      <div class="group-title">本月 TTS 字数统计</div>
+      <div>
+        <div :class="`${item.provider}-card card`" v-for="item in thisMonthTtsWordCount">
+          <h3>本月{{item.api_name}}</h3>
+          <h1>{{item.word_count}}</h1>
+        </div>
+      </div>
+    </div>
+
+    <!--TTS 总字数统计-->
+    <div class="data-list" v-if="ttsWordCount.length">
+      <div class="group-title">TTS 总字数统计</div>
+      <div>
+        <div :class="`${item.provider}-card card`" v-for="item in ttsWordCount">
+          <h3>{{item.api_name}}</h3>
+          <h1>{{item.word_count}}</h1>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -67,11 +89,15 @@ const thisMonthOcrCount = ref([]);
 const ocrCount = ref([]);
 const thisMonthTranslationWordCount = ref([]);
 const translationWordCount = ref([]);
+const thisMonthTtsWordCount = ref([]);
+const ttsWordCount = ref([]);
 
 getThisMonthOcrCount();
 getOcrCount();
 getThisMonthTranslationWordCount();
 getTranslationWordCount();
+getThisMonthTtsWordCount();
+getTtsWordCount();
 
 /**
  * 获取本月翻译字数统计
@@ -103,6 +129,38 @@ async function getTranslationWordCount() {
     });
   }
   translationWordCount.value = result.data;
+}
+
+/**
+ * 获取本月 TTS 字数统计
+ * @returns {Promise<void>}
+ */
+async function getThisMonthTtsWordCount() {
+  const result = await data.getThisMonthTtsWordCount(DateTime.getFirstDayOfMonthTimestamp());
+  if (result.result !== 'success') {
+    await Dialog.alert({
+      title: '出错了',
+      message: result.msg,
+      buttonTitle: '关闭'
+    });
+  }
+  thisMonthTtsWordCount.value = result.data;
+}
+
+/**
+ * 获取 TTS 字数统计
+ * @returns {Promise<void>}
+ */
+async function getTtsWordCount() {
+  const result = await data.getTtsWordCount();
+  if (result.result !== 'success') {
+    await Dialog.alert({
+      title: '出错了',
+      message: result.msg,
+      buttonTitle: '关闭'
+    });
+  }
+  ttsWordCount.value = result.data;
 }
 
 /**
@@ -167,19 +225,28 @@ async function getOcrCount() {
   margin: 0 0 16px 0;
   font-size: 26px;
 }
+/*百度 API 配色*/
 .baidu-card {
   background: linear-gradient(to right, #005FF7, #00CB5F, #F74D2D);
 }
+/*腾讯 API 配色*/
 .tencent-card {
   background: linear-gradient(to right, #006EFF, #00A2FF);
 }
+/*阿里 API 配色*/
 .ali-card {
   background: #FF6A00;
 }
+/*有道 API 配色*/
 .youdao-card {
   background: #F40119;
 }
+/*讯飞 API 配色*/
 .xunfei-card {
   background: #0D3552;
+}
+/*小米 API 配色*/
+.xiaomi-card {
+  background: #FF6900;
 }
 </style>
