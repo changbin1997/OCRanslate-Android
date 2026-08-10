@@ -73,6 +73,28 @@ class Data {
   }
 
   /**
+   * 导入 TTS 记录
+   * @param dataList 数据对象数组
+   * @returns {Promise<{result: string, count: number}|{result: string, msg: *}>}
+   */
+  async importTtsHistory(dataList) {
+    // 生成占位符
+    const placeholders = dataList.map(() => '(?, ?, ?, ?)').join(', ');
+    const sql = `
+    INSERT INTO tts_history (api_name, provider, created, word_count)
+    VALUES ${placeholders}
+    `;
+    // 转换数组
+    const values = dataList.flatMap(item => [item.api_name, item.provider, item.created, item.word_count]);
+    try {
+      const result = await this.db.run(sql, values);
+      return {result: 'success', count: result.changes.changes};
+    }catch (error) {
+      return {result: 'error', msg: error.message};
+    }
+  }
+
+  /**
    * 获取所有翻译记录，用于导出数据
    * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
    */
@@ -92,6 +114,20 @@ class Data {
    */
   async exportOcrHistory() {
     const sql = 'SELECT api_name, provider, created FROM ocr_history';
+    try {
+      const result = await this.db.query(sql);
+      return {result: 'success', data: result.values};
+    }catch (error) {
+      return {result: 'error', msg: error.message};
+    }
+  }
+
+  /**
+   * 获取所有 TTS 记录，用于导出数据
+   * @returns {Promise<{result: string, data: *}|{result: string, msg: *}>}
+   */
+  async exportTtsHistory() {
+    const sql = 'SELECT api_name, provider, created, word_count FROM tts_history';
     try {
       const result = await this.db.query(sql);
       return {result: 'success', data: result.values};
