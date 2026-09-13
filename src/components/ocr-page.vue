@@ -9,6 +9,7 @@
       <t-button @click="copyText" aria-label="拷贝" size="small" theme="light" :icon="icon.CopyIcon"></t-button>
       <t-button @click="speak" aria-label="朗读" size="small" theme="light" :icon="icon.VoiceWaveIcon"></t-button>
       <t-button @click="toTranslatePage" aria-label="翻译" size="small" theme="light" :icon="icon.TranslateIcon"></t-button>
+      <t-button @click="shareText" aria-label="分享" size="small" theme="light" :icon="icon.ShareIcon"></t-button>
       <t-button @click="resultList = []" aria-label="清除" size="small" theme="light" :icon="icon.CloseIcon"></t-button>
     </div>
     <!--拍照和相册选择区域-->
@@ -40,7 +41,8 @@ import {
   VoiceWaveIcon,
   CopyIcon,
   TranslateIcon,
-  CloseIcon
+  CloseIcon,
+  ShareIcon
 } from 'tdesign-icons-vue-next';
 // 注册图标
 const icon = {
@@ -50,13 +52,15 @@ const icon = {
   VoiceWaveIcon: h(VoiceWaveIcon),
   CopyIcon: h(CopyIcon),
   TranslateIcon: h(TranslateIcon),
-  CloseIcon: h(CloseIcon)
+  CloseIcon: h(CloseIcon),
+  ShareIcon: h(ShareIcon)
 }
 
 import Ocr from './../modules/Ocr.js';
 import {Toast} from '@capacitor/toast';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import {Clipboard} from '@capacitor/clipboard';
+import {Share} from '@capacitor/share';
 import {useRouter} from 'vue-router';
 import {Dialog} from '@capacitor/dialog';
 import camera from './camera.vue';
@@ -320,6 +324,30 @@ async function copyText() {
       message: error.message,
       buttonTitle: '关闭'
     });
+  }
+}
+
+/**
+ * 分享识别文本
+ * @returns {Promise<boolean>} 没有内容返回 false
+ */
+async function shareText() {
+  if (resultList.value.length < 1) return false;
+  const text = resultList.value.join('\n');
+  try {
+    await Share.share({
+      title: '分享识别结果',
+      text: text,
+      dialogTitle: '分享识别结果'
+    });
+  }catch (error) {
+    if (error.message !== 'Share canceled') {
+      await Dialog.alert({
+        title: '出错了',
+        message: error.message,
+        buttonTitle: '关闭'
+      });
+    }
   }
 }
 

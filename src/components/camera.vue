@@ -56,8 +56,7 @@ async function changeFlashlight() {
  */
 async function takePhoto() {
   try {
-    const result = await CameraPreview.captureSample({quality: 85});
-    //const result = await CameraPreview.capture({quality: 85});
+    const result = await CameraPreview.capture({quality: 85});
 
     emit('takePhoto', result.value);
     // 关闭相机

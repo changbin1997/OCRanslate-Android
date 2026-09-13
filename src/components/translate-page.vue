@@ -24,6 +24,7 @@
       <div class="toolbar" role="toolbar" v-if="dstTextList.length">
         <t-button @click="speak" aria-label="朗读" size="small" theme="light" :icon="icon.VoiceWaveIcon"></t-button>
         <t-button @click="copyText('dst')" aria-label="拷贝" size="small" theme="primary" variant="text" :icon="icon.CopyIcon"></t-button>
+        <t-button @click="shareText" aria-label="分享" size="small" theme="light" :icon="icon.ShareIcon"></t-button>
       </div>
     </div>
     <!--翻译按钮区域-->
@@ -55,6 +56,7 @@ import {h, ref, inject, onBeforeUnmount, onMounted} from 'vue';
 import languageList from './../modules/language-list.js';
 import Translation from './../modules/Translation.js';
 import {Clipboard} from '@capacitor/clipboard';
+import {Share} from '@capacitor/share';
 import {Toast} from '@capacitor/toast';
 import { Camera } from '@capacitor/camera';
 import {Dialog} from '@capacitor/dialog';
@@ -70,7 +72,8 @@ import {
   CloseIcon,
   VoiceWaveIcon,
   CameraIcon,
-  AppIcon
+  AppIcon,
+  ShareIcon
 } from 'tdesign-icons-vue-next'
 // 注册图标
 const icon = {
@@ -79,7 +82,8 @@ const icon = {
   CloseIcon: h(CloseIcon),
   VoiceWaveIcon: h(VoiceWaveIcon),
   CameraIcon: h(CameraIcon),
-  AppIcon: h(AppIcon)
+  AppIcon: h(AppIcon),
+  ShareIcon: h(ShareIcon)
 };
 
 const srcText = ref('');  // 原文
@@ -295,6 +299,30 @@ async function copyText(textType = 'src') {
       message: error.message,
       buttonTitle: '关闭'
     });
+  }
+}
+
+/**
+ * 分享翻译内容
+ * @returns {Promise<boolean>} 没有内容返回 false
+ */
+async function shareText() {
+  if (dstTextList.value.length < 1) return false;
+  const text = `原文：\n\n${srcText.value}\n\n译文：\n\n${dstTextList.value.join('\n')}`;
+  try {
+    await Share.share({
+      title: '分享翻译结果',
+      text: text,
+      dialogTitle: '分享翻译结果'
+    });
+  }catch (error) {
+    if (error.message !== 'Share canceled') {
+      await Dialog.alert({
+        title: '出错了',
+        message: error.message,
+        buttonTitle: '关闭'
+      });
+    }
   }
 }
 

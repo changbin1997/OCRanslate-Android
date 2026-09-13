@@ -123,8 +123,6 @@ function handleTouchEnd() {
   // 结束绘制状态并闭合路径
   isDrawing = false;
   ctx.closePath();
-  // 裁剪
-  cropImage();
 }
 
 /**
