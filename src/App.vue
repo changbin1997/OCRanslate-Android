@@ -1,6 +1,6 @@
 <template>
   <t-navbar :fixed="true" :title="titleBarName + apiName" left-arrow :leftArrow="showLeftArrow" @left-click="router.back()" />
-  <router-view v-if="showPage"></router-view>
+  <router-view></router-view>
   <!--底部标签栏-->
   <t-tab-bar v-model="tabName" theme="tag" :fixed="true" :split="false" @change="changePage" v-show="!showLeftArrow">
     <t-tab-bar-item v-for="item in tabList" :key="item.value" :value="item.value">
@@ -50,7 +50,6 @@ const titleList = {
   ttsHistoryPage: '在线 TTS 语音历史记录'
 };
 
-const showPage = ref(false);  // 显示页面组件
 const translateOcrResult = ref('');  // 要翻译的 OCR 结果
 const apiName = ref('');  // 要显示在标题栏的 API 名称
 const options = ref(null);  // 选项数据
@@ -145,7 +144,6 @@ async function dataInit() {
     return false;
   }
   options.value = optionsData.data;
-  showPage.value = true;
 }
 
 /**

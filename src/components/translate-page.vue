@@ -52,7 +52,7 @@
 
 <script setup>
 document.title  = '翻译 - OCRanslate';
-import {h, ref, inject, onBeforeUnmount, onMounted} from 'vue';
+import {h, ref, inject, watch, onBeforeUnmount, onMounted} from 'vue';
 import languageList from './../modules/language-list.js';
 import Translation from './../modules/Translation.js';
 import {Clipboard} from '@capacitor/clipboard';
@@ -129,20 +129,28 @@ titleBarApiName.setApiName(
 // 获取选项数据
 const options = inject('options');
 
-// 初始化翻译
-const translation = new Translation(options.options.value);
+let translation;  // 翻译对象
 
 // 程序相机的方法和状态
 const cameraRef = ref(null);
 
-// 初始化语音
-const tts = new TTS({
-  ttsEngine: options.options.value.translation_tts_engine,
-  mimoApiKey: options.options.value.mimo_api_key
-});
-// 设置语速和音量
-tts.speed = options.options.value.translation_voice_speed;
-tts.volume = options.options.value.translation_voice_volume;
+let tts;  // TTS 语音对象
+
+// 等待 App 加载完成选项数据后再初始化
+watch(() => options.options.value, optionsData => {
+  // 选项数据还没有加载完成
+  if (optionsData === null || optionsData === undefined) return false;
+  // 初始化翻译
+  translation = new Translation(optionsData);
+  // 初始化语音
+  tts = new TTS({
+    ttsEngine: optionsData.translation_tts_engine,
+    mimoApiKey: optionsData.mimo_api_key
+  });
+  // 设置语速和音量
+  tts.speed = optionsData.translation_voice_speed;
+  tts.volume = optionsData.translation_voice_volume;
+}, {immediate: true});
 
 // 组件挂载完成
 onMounted(() => {

@@ -32,7 +32,7 @@
 <script setup>
 document.title = 'OCR文字识别 - OCRanslate';
 
-import {h, ref, inject, onBeforeUnmount, onMounted} from 'vue';
+import {h, ref, inject, watch, onBeforeUnmount, onMounted} from 'vue';
 // 引入图标
 import {
   CameraIcon,
@@ -104,28 +104,36 @@ const cameraRef = ref(null);
 
 // 把 API 名称加入到标题栏
 titleBarApiName.setApiName(` - ${apiSelected.value[0]}`);
-const ocr = new Ocr(options.options.value);
+let ocr;  // OCR 识别对象
 let isSpeaking = false;   // 记录当前是否正在发音
 
 const imageCroppingRef = ref(null);
 
-// 创建TTS语音对象
-const tts = new TTS({
-  ttsEngine: options.options.value.ocr_tts_engine,
-  mimoApiKey: options.options.value.mimo_api_key
-});
-tts.speed = options.options.value.ocr_voice_speed;
-tts.volume = options.options.value.ocr_voice_volume;
+let tts;  // TTS 语音对象
 
-// 组件挂载完毕
-onMounted(async () => {
-  // 获取最近一次使用的 API
-  getLastTimeApiName();
+// 等待 App 加载完成选项数据后再初始化
+watch(() => options.options.value, async optionsData => {
+  // 选项数据还没有加载完成
+  if (optionsData === null || optionsData === undefined) return false;
+  ocr = new Ocr(optionsData);
+  // 创建TTS语音对象
+  tts = new TTS({
+    ttsEngine: optionsData.ocr_tts_engine,
+    mimoApiKey: optionsData.mimo_api_key
+  });
+  tts.speed = optionsData.ocr_voice_speed;
+  tts.volume = optionsData.ocr_voice_volume;
   // 如果设置了打开程序自动启动相机
-  if (options.options.value.auto_open_camera && !autoOpenCamera.value) {
+  if (optionsData.auto_open_camera && !autoOpenCamera.value) {
     await startCamera();
     autoOpenCamera.value = true;
   }
+}, {immediate: true});
+
+// 组件挂载完毕
+onMounted(() => {
+  // 获取最近一次使用的 API
+  getLastTimeApiName();
 });
 
 // 组件即将被销毁

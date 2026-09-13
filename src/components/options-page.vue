@@ -1,5 +1,5 @@
 <template>
-  <div id="options-list">
+  <div id="options-list" v-if="options.options.value">
     <!--百度 OCR -->
     <div>
       <div class="option-group-title">百度 OCR 接口</div>
@@ -153,7 +153,7 @@
 <script setup>
 document.title  = '选项 - OCRanslate';
 
-import {inject, ref} from 'vue';
+import {inject, ref, watch} from 'vue';
 import {Dialog} from '@capacitor/dialog';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -168,7 +168,7 @@ const cameraModeList = [
   {label: '设备默认相机', value: '设备默认相机'},
   {label: '程序内置相机', value: '程序内置相机'}
 ];
-const cameraModeSelected = ref([options.options.value.camera_mode]);
+const cameraModeSelected = ref([]);  // 选择的相机模式，等待 App 数据加载完成后填入
 
 // 显示 OCR 语音引擎设置列表
 const showOcrTtsEngineList = ref(false);
@@ -180,9 +180,9 @@ const ttsEngineList = [
   {label: 'MiMo-V2.5-TTS', value: 'MiMo-V2.5-TTS'}
 ];
 // 选择的 OCR 语音引擎
-const ocrTtsEngineSelected = ref([options.options.value.ocr_tts_engine]);
+const ocrTtsEngineSelected = ref([]);  // 选择的 OCR 语音引擎，等待 App 数据加载完成后填入
 // 选择的翻译语音引擎
-const translationTtsEngineSelected = ref([options.options.value.translation_tts_engine]);
+const translationTtsEngineSelected = ref([]);  // 选择的翻译语音引擎，等待 App 数据加载完成后填入
 
 // 拍照翻译的 OCR 接口选择列表
 const showDefaultOcrApiList = ref(false);
@@ -200,9 +200,19 @@ const defaultOcrApiList = [
   {label: '阿里云通用文字识别', value: '阿里云通用文字识别'},
   {label: '阿里云全文识别高精版', value: '阿里云全文识别高精版'}
 ];
-const defaultOcrApiSelected = ref([options.options.value.default_ocr_api]);
+const defaultOcrApiSelected = ref([]);  // 选择的拍照翻译 OCR 接口，等待 App 数据加载完成后填入
 
 const fileInput = ref(null);  // 文件表单，用来导入配置
+
+// 等待 App 加载完成选项数据后再填入列表选项
+watch(() => options.options.value, optionsData => {
+  // 选项数据还没有加载完成
+  if (optionsData === null || optionsData === undefined) return false;
+  cameraModeSelected.value = [optionsData.camera_mode];
+  ocrTtsEngineSelected.value = [optionsData.ocr_tts_engine];
+  translationTtsEngineSelected.value = [optionsData.translation_tts_engine];
+  defaultOcrApiSelected.value = [optionsData.default_ocr_api];
+}, {immediate: true});
 
 /**
  * 导出设置配置
