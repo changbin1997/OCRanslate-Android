@@ -19,7 +19,7 @@
 document.title = '导出和导入记录 - OCRanslate';
 
 import data from './../modules/Data.js';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import {Toast} from '@capacitor/toast';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -38,10 +38,10 @@ async function importTranslationHistory() {
   if (translationFileInput.value.value === '') return false;
   // 不是 JSON
   if (!/\.json$/.test(translationFileInput.value.files[0].name)) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '不支持的配置文件',
-      message: `您选择的 ${translationFileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
-      buttonTitle: '知道了'
+      content: `您选择的 ${translationFileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
+      confirmBtn: '知道了'
     });
     return false;
   }
@@ -54,19 +54,19 @@ async function importTranslationHistory() {
       const jsonData = JSON.parse(ev.target.result);
       const result = await data.importTranslationHistory(jsonData);
       if (result.result !== 'success') {
-        await Dialog.alert({
+        await MessageDialog.alert({
           title: '导入数据出错',
-          message: result.msg,
-          buttonTitle: '关闭'
+          content: result.msg,
+          confirmBtn: '关闭'
         });
         return false;
       }
       await Toast.show({text: `已成功导入 ${result.count} 条记录`});
     }catch (error) {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '读取文件出错',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   });
@@ -80,10 +80,10 @@ async function importTtsHistory() {
   if (ttsFileInput.value.value === '') return false;
   // 不是 JSON
   if (!/\.json$/.test(ttsFileInput.value.files[0].name)) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '不支持的配置文件',
-      message: `您选择的 ${ttsFileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
-      buttonTitle: '知道了'
+      content: `您选择的 ${ttsFileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
+      confirmBtn: '知道了'
     });
     return false;
   }
@@ -96,19 +96,19 @@ async function importTtsHistory() {
       const jsonData = JSON.parse(ev.target.result);
       const result = await data.importTtsHistory(jsonData);
       if (result.result !== 'success') {
-        await Dialog.alert({
+        await MessageDialog.alert({
           title: '导入数据出错',
-          message: result.msg,
-          buttonTitle: '关闭'
+          content: result.msg,
+          confirmBtn: '关闭'
         });
         return false;
       }
       await Toast.show({text: `已成功导入 ${result.count} 条记录`});
     }catch (error) {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '读取文件出错',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   });
@@ -122,10 +122,10 @@ async function importOcrHistory() {
   if (ocrFileInput.value.value === '') return false;
   // 不是 JSON
   if (!/\.json$/.test(ocrFileInput.value.files[0].name)) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '不支持的配置文件',
-      message: `您选择的 ${ocrFileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
-      buttonTitle: '知道了'
+      content: `您选择的 ${ocrFileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
+      confirmBtn: '知道了'
     });
     return false;
   }
@@ -138,19 +138,19 @@ async function importOcrHistory() {
       const jsonData = JSON.parse(ev.target.result);
       const result = await data.importOcrHistory(jsonData);
       if (result.result !== 'success') {
-        await Dialog.alert({
+        await MessageDialog.alert({
           title: '导入数据出错',
-          message: result.msg,
-          buttonTitle: '关闭'
+          content: result.msg,
+          confirmBtn: '关闭'
         });
         return false;
       }
       await Toast.show({text: `已成功导入 ${result.count} 条记录`});
     }catch (error) {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '读取文件出错',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   });
@@ -164,10 +164,10 @@ async function exporttranslationHistory() {
   // 获取翻译记录
   const result = await data.exporttranslationHistory();
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -196,10 +196,10 @@ async function exporttranslationHistory() {
     await Toast.show({text: '已成功导出翻译记录'});
   }catch (error) {
     if (error.message !== 'Share canceled') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   }
@@ -213,10 +213,10 @@ async function exportTtsHistory() {
   // 获取 TTS 记录
   const result = await data.exportTtsHistory();
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -245,10 +245,10 @@ async function exportTtsHistory() {
     await Toast.show({text: '已成功导出 TTS 记录'});
   }catch (error) {
     if (error.message !== 'Share canceled') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   }
@@ -262,10 +262,10 @@ async function exportOcrHistory() {
   // 获取 OCR 数据
   const result = await data.exportOcrHistory();
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -294,10 +294,10 @@ async function exportOcrHistory() {
     await Toast.show({text: '已成功导出 OCR 记录'});
   }catch (error) {
     if (error.message !== 'Share canceled') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   }

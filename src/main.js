@@ -29,7 +29,9 @@ import {Button as TButton,
   TypographyTitle,
   TypographyParagraph,
   Link,
-  Table
+  Table,
+  Dialog,
+  Input
 } from 'tdesign-mobile-vue';
 import 'tdesign-mobile-vue/es/style/index.css';
 
@@ -69,4 +71,6 @@ app.use(TypographyTitle);
 app.use(TypographyParagraph);
 app.use(Link);
 app.use(Table);
+app.use(Dialog);
+app.use(Input);
 app.mount('#app');

@@ -10,6 +10,8 @@
       </template>
     </t-tab-bar-item>
   </t-tab-bar>
+  <!--全局对话框-->
+  <message-dialog />
 </template>
 
 <script setup>
@@ -18,9 +20,10 @@ import {useRouter, useRoute} from 'vue-router';
 import { Icon as TIcon } from 'tdesign-icons-vue-next';
 import {StatusBar, Style} from '@capacitor/status-bar';
 import data from './modules/Data.js';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './modules/MessageDialog.js';
 import {Toast} from '@capacitor/toast';
 import {App} from '@capacitor/app';
+import messageDialog from './components/message-dialog.vue';
 
 // 路由
 const router = useRouter();
@@ -125,10 +128,10 @@ async function dataInit() {
   // 初始化数据库
   const result = await data.init();
   if (result.result === 'error') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -136,10 +139,10 @@ async function dataInit() {
   // 获取选项数据
   const optionsData = await data.getOptions();
   if (optionsData.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: optionsData.msg,
-      buttonTitle: '关闭'
+      content: optionsData.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -153,10 +156,10 @@ async function dataInit() {
 async function updateOptions() {
   const result = await data.updateOptions(options.value);
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }

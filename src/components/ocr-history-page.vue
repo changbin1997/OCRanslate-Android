@@ -13,7 +13,7 @@ document.title = 'OCR 历史记录 - OCRanslate';
 
 import {ref, onMounted} from 'vue';
 import data from './../modules/Data.js';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import DateTime from './../modules/DateTime.js';
 import {Toast} from '@capacitor/toast';
 
@@ -48,10 +48,10 @@ async function getOcrHistory() {
   const countResult = await data.getOcrHistoryCount();
   if (countResult.result !== 'success') {
     btnDisabled.value = false;
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: countResult.msg,
-      buttonTitle: '关闭'
+      content: countResult.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -62,10 +62,10 @@ async function getOcrHistory() {
   const result = await data.getOcrHistory(start, 20);
   if (result.result !== 'success') {
     btnDisabled.value = false;
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: countResult.msg,
-      buttonTitle: '关闭'
+      content: countResult.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }

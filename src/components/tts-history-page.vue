@@ -13,7 +13,7 @@ document.title = 'TTS 语音使用记录 - OCRanslate';
 
 import {ref, onMounted} from 'vue';
 import data from './../modules/Data.js';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import DateTime from './../modules/DateTime.js';
 import {Toast} from '@capacitor/toast';
 
@@ -50,10 +50,10 @@ async function getTtsHistory() {
   const countResult = await data.getTtsHistoryCount();
   if (countResult.result !== 'success') {
     btnDisabled.value = false;
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: countResult.msg,
-      buttonTitle: '关闭'
+      content: countResult.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -64,10 +64,10 @@ async function getTtsHistory() {
   const result = await data.getTtsHistory(start, 20);
   if (result.result !== 'success') {
     btnDisabled.value = false;
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }

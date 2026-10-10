@@ -71,7 +71,7 @@
 <script setup>
 document.title = '关于 - OCRanslate';
 
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import {AppLauncher} from '@capacitor/app-launcher';
 
 /**
@@ -85,17 +85,17 @@ async function openUrl(url) {
     if (value) {
       await AppLauncher.openUrl({url: url});
     }else {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: '无法打开链接！',
-        buttonTitle: '关闭'
+        content: '无法打开链接！',
+        confirmBtn: '关闭'
       });
     }
   }catch (error) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: error.message,
-      buttonTitle: '关闭'
+      content: error.message,
+      confirmBtn: '关闭'
     });
   }
 }

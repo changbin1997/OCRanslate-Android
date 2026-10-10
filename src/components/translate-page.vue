@@ -59,7 +59,7 @@ import {Clipboard} from '@capacitor/clipboard';
 import {Share} from '@capacitor/share';
 import {Toast} from '@capacitor/toast';
 import { Camera } from '@capacitor/camera';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import Ocr from './../modules/Ocr.js';
 import camera from './camera.vue';
 import TTS from './../modules/TTS.js';
@@ -247,10 +247,10 @@ async function takePicture() {
     await extractText(image.base64String);
   }catch (error) {
     if (error.message !== 'User cancelled photos app') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   }
@@ -267,19 +267,19 @@ async function extractText(base64Img) {
   const result = await ocr.submit(base64Img, options.options.value.default_ocr_api);
   btnDisabled.value = false;
   if (result.result !== 'success' && result.msg !== undefined) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
 
   if (typeof result.list !== 'object' || result.list.length < 1) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '未检测到文字',
-      message: '您提交的图片中没有检测到文字！',
-      buttonTitle: '关闭'
+      content: '您提交的图片中没有检测到文字！',
+      confirmBtn: '关闭'
     });
     return false;
   }
@@ -302,10 +302,10 @@ async function copyText(textType = 'src') {
     await Clipboard.write({string: text});
     await Toast.show({text: '拷贝成功'});
   }catch (error) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: error.message,
-      buttonTitle: '关闭'
+      content: error.message,
+      confirmBtn: '关闭'
     });
   }
 }
@@ -325,10 +325,10 @@ async function shareText() {
     });
   }catch (error) {
     if (error.message !== 'Share canceled') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   }
@@ -419,10 +419,10 @@ async function submit() {
   btnDisabled.value = false;
   // 失败
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }

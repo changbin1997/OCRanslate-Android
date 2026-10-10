@@ -75,7 +75,7 @@ document.title = '历史总览 - OCRanslate';
 
 import {ref, h} from 'vue';
 import data from './../modules/Data.js';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import DateTime from './../modules/DateTime.js';
 
 // 引入图标
@@ -106,10 +106,10 @@ getTtsWordCount();
 async function getThisMonthTranslationWordCount() {
   const result = await data.getThisMonthTranslationWordCount(DateTime.getFirstDayOfMonthTimestamp());
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
   }
   thisMonthTranslationWordCount.value = result.data;
@@ -122,10 +122,10 @@ async function getThisMonthTranslationWordCount() {
 async function getTranslationWordCount() {
   const result = await data.getTranslationWordCount();
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
   }
   translationWordCount.value = result.data;
@@ -138,10 +138,10 @@ async function getTranslationWordCount() {
 async function getThisMonthTtsWordCount() {
   const result = await data.getThisMonthTtsWordCount(DateTime.getFirstDayOfMonthTimestamp());
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
   }
   thisMonthTtsWordCount.value = result.data;
@@ -154,10 +154,10 @@ async function getThisMonthTtsWordCount() {
 async function getTtsWordCount() {
   const result = await data.getTtsWordCount();
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
   }
   ttsWordCount.value = result.data;
@@ -170,10 +170,10 @@ async function getTtsWordCount() {
 async function getThisMonthOcrCount() {
   const result = await data.getThisMonthOcrCount(DateTime.getFirstDayOfMonthTimestamp());
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
   }
   thisMonthOcrCount.value = result.data;
@@ -186,10 +186,10 @@ async function getThisMonthOcrCount() {
 async function getOcrCount() {
   const result = await data.getOcrCount();
   if (result.result !== 'success') {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
   }
   ocrCount.value = result.data;

@@ -16,7 +16,6 @@ dependencies {
     implementation project(':capacitor-app-launcher')
     implementation project(':capacitor-camera')
     implementation project(':capacitor-clipboard')
-    implementation project(':capacitor-dialog')
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-screen-reader')
     implementation project(':capacitor-share')

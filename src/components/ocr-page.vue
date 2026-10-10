@@ -62,7 +62,7 @@ import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import {Clipboard} from '@capacitor/clipboard';
 import {Share} from '@capacitor/share';
 import {useRouter} from 'vue-router';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import camera from './camera.vue';
 import imageCropping from './image-cropping.vue';
 import { ScreenReader } from '@capacitor/screen-reader';
@@ -248,10 +248,10 @@ async function pickImageAndGetBase64() {
     }
   } catch (error) {
     if (error.message !== 'User cancelled photos app') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
     if (showImageCropping.value) showImageCropping.value = false;
@@ -327,10 +327,10 @@ async function copyText() {
     await Clipboard.write({string: text});
     await Toast.show({text: '拷贝成功'});
   }catch (error) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: error.message,
-      buttonTitle: '关闭'
+      content: error.message,
+      confirmBtn: '关闭'
     });
   }
 }
@@ -350,10 +350,10 @@ async function shareText() {
     });
   }catch (error) {
     if (error.message !== 'Share canceled') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   }
@@ -389,10 +389,10 @@ async function takePicture() {
     }
   }catch (error) {
     if (error.message !== 'User cancelled photos app') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
     if (showImageCropping.value) showImageCropping.value = false;
@@ -413,19 +413,19 @@ async function submit(base64Img) {
   btnDisabled.value = false;
   // 出错
   if (result.result !== 'success' && result.msg !== undefined) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: result.msg,
-      buttonTitle: '关闭'
+      content: result.msg,
+      confirmBtn: '关闭'
     });
     return false;
   }
   // 没有文字
   if (typeof result.list !== 'object' || result.list.length < 1) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '未检测到文字',
-      message: '您提交的图片中没有检测到文字！',
-      buttonTitle: '关闭'
+      content: '您提交的图片中没有检测到文字！',
+      confirmBtn: '关闭'
     });
     return false;
   }

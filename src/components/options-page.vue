@@ -154,7 +154,7 @@
 document.title  = '选项 - OCRanslate';
 
 import {inject, ref, watch} from 'vue';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import {Toast} from '@capacitor/toast';
@@ -239,10 +239,10 @@ async function exportOptions() {
     await Toast.show({text: '已成功导出设置配置'});
   }catch (error) {
     if (error.message !== 'Share canceled') {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '出错了',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   }
@@ -256,10 +256,10 @@ async function inputOptions() {
   if (fileInput.value.value === '') return false;
   // 不是 JSON
   if (!/\.json$/.test(fileInput.value.files[0].name)) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '不支持的配置文件',
-      message: `您选择的 ${fileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
-      buttonTitle: '知道了'
+      content: `您选择的 ${fileInput.value.files[0].name} 不是支持的配置文件，请选择 JSON 文件！`,
+      confirmBtn: '知道了'
     });
     return false;
   }
@@ -280,27 +280,27 @@ async function inputOptions() {
       defaultOcrApiSelected.value[0] = optionsJson.default_ocr_api;
       cameraModeSelected.value[0] = optionsJson.camera_mode;
 
-      const result = await Dialog.confirm({
+      const result = await MessageDialog.confirm({
         title: '配置导入完成',
-        message: '您的配置已成功导入，是否要保存设置？',
-        okButtonTitle: '保存设置',
-        cancelButtonTitle: '暂不保存'
+        content: '您的配置已成功导入，是否要保存设置？',
+        confirmBtn: '保存设置',
+        cancelBtn: '暂不保存'
       });
-      if (result.value) await updateOptions();
+      if (result === true) await updateOptions();
     }catch (error) {
-      await Dialog.alert({
+      await MessageDialog.alert({
         title: '读取文件出错',
-        message: error.message,
-        buttonTitle: '关闭'
+        content: error.message,
+        confirmBtn: '关闭'
       });
     }
   });
   // 读取失败
   reader.addEventListener('error', async () => {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '读取文件出错',
-      message: reader.error.name,
-      buttonTitle: '关闭'
+      content: reader.error.name,
+      confirmBtn: '关闭'
     });
   });
 }
@@ -326,14 +326,14 @@ async function updateOptions() {
  * @returns {Promise<boolean>}
  */
 async function showPrompt(title, optionName) {
-  const result = await Dialog.prompt({
+  const result = await MessageDialog.prompt({
     title: title,
-    message: `请输入 ${title}`,
-    inputText: options.options.value[optionName],
-    okButtonTitle: '确定',
-    cancelButtonTitle: '取消'
+    content: `请输入 ${title}`,
+    inputValue: options.options.value[optionName],
+    confirmBtn: '确定',
+    cancelBtn: '取消'
   });
-  if (result.cancelled) return false;
+  if (!result.confirmed) return false;
   options.options.value[optionName] = result.value;
 }
 </script>

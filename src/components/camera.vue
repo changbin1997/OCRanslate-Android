@@ -9,7 +9,7 @@
 <script setup>
 import {CameraPreview} from '@capacitor-community/camera-preview';
 import {defineExpose, h, ref, defineEmits} from 'vue';
-import {Dialog} from '@capacitor/dialog';
+import MessageDialog from './../modules/MessageDialog.js';
 import {CloseIcon, FlashlightIcon} from 'tdesign-icons-vue-next';
 
 const icon = {
@@ -42,10 +42,10 @@ async function changeFlashlight() {
       flashlightActive.value = true;
     }
   } catch (error) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: error.message,
-      buttonTitle: '关闭'
+      content: error.message,
+      confirmBtn: '关闭'
     });
   }
 }
@@ -62,10 +62,10 @@ async function takePhoto() {
     // 关闭相机
     await stopCamera();
   } catch (error) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: error.message,
-      buttonTitle: '关闭'
+      content: error.message,
+      confirmBtn: '关闭'
     });
   }
 }
@@ -92,10 +92,10 @@ async function startCamera() {
     document.body.classList.add('transparent-background');
     document.querySelector('html').classList.add('transparent-background');
   } catch (error) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: error.message,
-      buttonTitle: '关闭'
+      content: error.message,
+      confirmBtn: '关闭'
     });
   }
 }
@@ -119,10 +119,10 @@ async function stopCamera() {
     // 触发关闭相机事件
     emit('cameraStopped');
   } catch (error) {
-    await Dialog.alert({
+    await MessageDialog.alert({
       title: '出错了',
-      message: error.message,
-      buttonTitle: '关闭'
+      content: error.message,
+      confirmBtn: '关闭'
     });
   }
 }
